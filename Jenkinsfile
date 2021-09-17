@@ -68,7 +68,7 @@ node {
 
           if(prLabels.contains("integ-all") || prLabels.contains("integ-eks") || prLabels.contains("integ-gke") || prLabels.contains("integ-aks") || prLabels.contains("integ-openshift")) {
                   jobMap = [:]
-                  jobMap["job"] = "../kubernetes-test-orchestrator/master"
+                  jobMap["job"] = "../kubernetes-test-orchestrator/feature/US-422839"
                   jobMap["parameters"] = [
                           string(name: 'PROVIDERS', value: labels),
                           string(name: 'WEB_READY_IMAGE_NAME', value: ""),
