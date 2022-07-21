@@ -136,3 +136,53 @@
 {{ . }}
 {{ end }}
 {{- end -}}
+
+{{- define "pega.install.container" -}}
+      - name: {{ template "pegaDBInstallerContainer" }}
+        image: {{ .root.Values.image }}
+        ports:
+        - containerPort: 8080
+        resources:
+          # CPU and Memory that the containers for {{ .name }} request
+          requests:
+            cpu: "{{ .root.Values.resources.requests.cpu }}"
+            memory: "{{ .root.Values.resources.requests.memory }}"
+          limits:
+            cpu: "{{ .root.Values.resources.limits.cpu }}"
+            memory: "{{ .root.Values.resources.limits.memory }}"
+        volumeMounts:
+        # The given mountpath is mapped to volume with the specified name.  The config map files are mounted here.
+        - name: {{ template "pegaVolumeInstall" }}
+          mountPath: "/opt/pega/config"
+        - name: {{ template "pegaVolumeCredentials" }}
+          mountPath: "/opt/pega/secrets"
+{{- if and .root.Values.distributionKitVolumeClaimName (not .root.Values.distributionKitURL) }}          
+        - name: {{ template "pegaDistributionKitVolume" }}
+          mountPath: "/opt/pega/mount/kit"                           
+{{- end }}
+{{ if (eq (include "customArtifactorySSLVerificationEnabled" .root) "true") }}
+{{- if .root.Values.global.customArtifactory.certificate }}
+        - name: {{ template "pegaVolumeCustomArtifactoryCertificate" }}
+          mountPath: "/opt/pega/artifactory/cert"
+{{- end }}
+{{- end }}
+{{- if or (eq $arg "pre-upgrade") (eq $arg "post-upgrade") (eq $arg "upgrade")  }}
+        env:
+        -  name: ACTION
+           value: {{ .action }}
+        envFrom:
+        - configMapRef:
+            name: {{ template "pegaUpgradeEnvironmentConfig" }}
+{{- end }}
+{{- if (eq $arg "install") }}
+        envFrom:
+        - configMapRef:
+            name: {{ template "pegaInstallEnvironmentConfig" }}
+{{- end }}
+{{- if .root.Values.sidecarContainers }}
+{{ toYaml .root.Values.sidecarContainers | indent 6 }}
+{{- end }}                
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: {{ template "pegaRegistrySecret" .root }}
+{{- end -}}
